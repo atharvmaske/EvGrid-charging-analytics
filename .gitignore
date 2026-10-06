@@ -55,5 +55,4 @@ htmlcov/
 *.tmp
 *.temp
 
-api/
 airflow/logs/
