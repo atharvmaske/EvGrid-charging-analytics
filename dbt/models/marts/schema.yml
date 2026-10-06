@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: mart_ev_city_summary
+
+    columns:
+      - name: city
+        tests:
+          - unique
+          - not_null
+
+      - name: total_stations
+        tests:
+          - not_null
+
+      - name: avg_occupancy_rate
+        tests:
+          - not_null

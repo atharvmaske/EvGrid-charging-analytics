@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: fct_connector_distribution
+    description: >
+      Real connector type distribution across all EV charging stations
+      using Open Charge Map connector metadata.
+
+    columns:
+      - name: city
+        description: City name.
+        tests:
+          - not_null
+
+      - name: connector_type
+        description: Real connector type from Open Charge Map.
+        tests:
+          - not_null
+
+      - name: current_type
+        description: Connector current type normalized to AC, DC, or AC/DC.
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - AC
+                - DC
+                - AC/DC
+
+      - name: power_kw
+        description: Connector power rating in kW.
+        tests: []
+
+      - name: stations_with_type
+        description: Number of stations with this connector type.
+        tests:
+          - not_null
+
+      - name: total_connectors_of_type
+        description: Total connectors of this type.
+        tests:
+          - not_null
+
+      - name: pct_of_all_connectors
+        description: Percentage share of connectors in the city.
+        tests:
+          - not_null
+
+      - name: min_power_kw
+        description: Minimum power for this connector type.
+        tests: []
+
+      - name: max_power_kw
+        description: Maximum power for this connector type.
+        tests: []
+
+      - name: avg_power_kw
+        description: Average connector power.
+        tests: []
+
+      - name: last_updated
+        description: Transformation timestamp.
+        tests:
+          - not_null

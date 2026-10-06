@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: day_ahead_prices_de
+    description: >
+      Hourly DE-LU day-ahead electricity price from SMARD.de (EUR/MWh and EUR/kWh).
+      Real wholesale spot price, not a retail price -- see docs/simulator_assumptions.md.
+    columns:
+      - name: hour_utc
+        tests:
+          - not_null
+          - unique
+      - name: price_eur_per_kwh
+        tests:
+          - not_null
+
+  - name: station_power_de
+    description: >
+      Bundesnetzagentur Ladesaeulenregister stations matched to bronze.charging_stations
+      for configured German cities. One row per matched station_id; cities or
+      stations with no match simply have no row here.
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+          - unique
+      - name: avg_power_kw
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 400
+              row_condition: "avg_power_kw is not null"

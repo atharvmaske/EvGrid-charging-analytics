@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_city
+    description: City dimension with country and IANA time zone.
+    columns:
+      - name: city
+        tests:
+          - unique
+          - not_null
+      - name: timezone
+        tests:
+          - not_null
+
+  - name: mart_occupancy_hourly
+    description: Connector-weighted occupancy per city and hour (UTC and local).
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: snapshot_hour
+        tests:
+          - not_null
+      - name: local_hour
+        tests:
+          - not_null
+
+  - name: mart_occupancy_by_hour_of_day
+    description: Typical occupancy by local hour of day, weekday vs weekend.
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: local_hour
+        tests:
+          - not_null
+      - name: avg_occupancy_pct
+        tests:
+          - not_null

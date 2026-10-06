@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚡ EVGrid Charging Analytics</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+    <style>
+        .connector-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #f0f0f0;
+            border-left: 3px solid #3568F6;
+        }
+
+        .connector-type {
+            color: #333;
+        }
+
+        .connector-power {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .connector-ac {
+            background: #e3f2fd;
+            border-left-color: #2196F3;
+        }
+
+        .connector-dc {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+
+        .connector-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .connector-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+
+    <div class="header-left">
+
+        <h1>⚡ EVGrid Charging Analytics</h1>
+
+        <div class="weather-mini">
+
+            <span id="city-name">BERLIN</span>
+
+            <div class="weather-grid">
+
+                <div class="weather-item">
+                    🌡️
+                    <strong id="temperature">--°C</strong>
+                    <small>Temperature</small>
+                </div>
+
+                <div class="weather-item">
+                    🌧️
+                    <strong id="rain">-- mm</strong>
+                    <small>Rain</small>
+                </div>
+
+                <div class="weather-item">
+                    💧
+                    <strong id="humidity">--%</strong>
+                    <small>Humidity</small>
+                </div>
+
+                <div class="weather-item">
+                    🌬️
+                    <strong id="wind">-- km/h</strong>
+                    <small>Wind Speed</small>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="controls">
+
+                <select id="citySelect">
+            <option value="berlin">Berlin 🇩🇪</option>
+            <option value="munich">Munich 🇩🇪</option>
+            <option value="frankfurt">Frankfurt 🇩🇪</option>
+            <option value="stuttgart">Stuttgart 🇩🇪</option>
+            <option value="hamburg">Hamburg 🇩🇪</option>
+            <option value="cologne">Cologne 🇩🇪</option>
+            <option value="dusseldorf">Düsseldorf 🇩🇪</option>
+            <option value="essen">Essen 🇩🇪</option>
+            <option value="leipzig">Leipzig 🇩🇪</option>
+            <option value="dresden">Dresden 🇩🇪</option>
+            <option value="nuremberg">Nuremberg 🇩🇪</option>
+
+            <option value="vienna">Vienna 🇦🇹</option>
+            <option value="linz">Linz 🇦🇹</option>
+
+            <option value="amsterdam">Amsterdam 🇳🇱</option>
+            <option value="paris">Paris 🇫🇷</option>
+            <option value="london">London 🇬🇧</option>
+            <option value="bern">Bern 🇨🇭</option>
+            <option value="copenhagen">Copenhagen 🇩🇰</option>
+            <option value="stockholm">Stockholm 🇸🇪</option>
+
+            <option value="los_angeles">Los Angeles 🇺🇸</option>
+            <option value="bengaluru">Bengaluru 🇮🇳</option>
+            <option value="pune">Pune 🇮🇳</option>
+            <option value="hyderabad">Hyderabad 🇮🇳</option>
+            <option value="chennai">Chennai 🇮🇳</option>
+            <option value="solapur">Solapur 🇮🇳</option>
+
+            <option value="tokyo">Tokyo 🇯🇵</option>
+            <option value="shanghai">Shanghai 🇨🇳</option>
+        </select>
+
+        <select id="carModel">
+
+            <option value="">🚗 EV Model</option>
+
+            <optgroup label="India">
+                <option value="Tata Nexon EV">Tata Nexon EV</option>
+                <option value="Tata Punch EV">Tata Punch EV</option>
+                <option value="Mahindra XUV400">Mahindra XUV400</option>
+                <option value="MG ZS EV">MG ZS EV</option>
+                <option value="BYD Atto 3">BYD Atto 3</option>
+            </optgroup>
+
+            <optgroup label="Europe">
+                <option value="Tesla Model 3">Tesla Model 3</option>
+                <option value="Tesla Model Y">Tesla Model Y</option>
+                <option value="Volkswagen ID.4">Volkswagen ID.4</option>
+                <option value="BMW i4">BMW i4</option>
+                <option value="Mercedes EQE">Mercedes EQE</option>
+                <option value="Audi Q8 e-tron">Audi Q8 e-tron</option>
+            </optgroup>
+
+            <optgroup label="Asia">
+                <option value="Hyundai Ioniq 5">Hyundai Ioniq 5</option>
+                <option value="Hyundai Kona Electric">Hyundai Kona Electric</option>
+                <option value="Kia EV6">Kia EV6</option>
+                <option value="Toyota bZ4X">Toyota bZ4X</option>
+                <option value="Nissan Leaf">Nissan Leaf</option>
+            </optgroup>
+
+        </select>
+
+        <div class="search-wrapper">
+
+            <input
+                id="customLocation"
+                type="text"
+                placeholder="Search address or landmark..."
+                autocomplete="off">
+
+            <div id="addressSuggestions" class="suggestions"></div>
+
+        </div>
+
+        <button id="locationBtn" title="Current Location">
+            📍
+        </button>
+
+        <button id="searchLocationBtn">
+            Search
+        </button>
+
+        <button id="refreshBtn" title="Refresh Dashboard">
+            ⟳
+        </button>
+
+        <button id="stopNavTopBtn" class="stop-nav-top-btn" title="Stop Navigation">
+            ■ Stop
+        </button>
+
+    </div>
+
+</header>
+
+<section class="location-bar">
+
+    <span id="locationStatus">
+        📍 Manual city selected: Berlin
+    </span>
+
+</section>
+
+<section id="plannerCard" class="planner-mini">
+
+    <div class="planner-left">
+
+        <div class="planner-icon">🔋</div>
+
+        <div>
+
+            <h4>AI Charging Planner</h4>
+
+            <small id="selectedCar">Select EV Model</small>
+
+        </div>
+
+    </div>
+
+    <div class="planner-center">
+
+        <input
+            id="batterySlider"
+            type="range"
+            min="5"
+            max="100"
+            value="50">
+
+    </div>
+
+    <div class="planner-right">
+
+        <span id="batteryValue">50%</span>
+
+        <small>Target 98%</small>
+
+    </div>
+
+</section>
+
+<section class="summary-bar">
+
+    <div class="metric">
+        <small>Total Stations</small>
+        <h2 id="station-count">0</h2>
+    </div>
+
+    <div class="metric green">
+        <small>Available Connectors</small>
+        <h2 id="available-count">0</h2>
+    </div>
+
+    <div class="metric red">
+        <small>Occupied Connectors</small>
+        <h2 id="occupied-count">0</h2>
+    </div>
+
+</section>
+
+<main id="mainLayout">
+
+    <section id="map-container">
+
+        <button id="toggleSidebarBtn" class="menu-toggle" title="Toggle Sidebar">
+            ☰
+        </button>
+
+        <section id="map"></section>
+
+        <div id="routeInfo" class="route-card hidden">
+
+            <div class="route-top">
+
+                <div>
+
+                    <span class="route-tag">🧭 Navigation</span>
+
+                    <h3 id="routeStation">Destination</h3>
+
+                </div>
+
+                <div class="cost-box">
+
+                    <small>Charging Cost</small>
+
+                    <h2 id="routeCost">--</h2>
+
+                </div>
+
+            </div>
+
+            <div class="route-grid">
+
+                <div class="route-item">
+                    <small>Distance</small>
+                    <p id="routeDistance">-- km</p>
+                </div>
+
+                <div class="route-item">
+                    <small>ETA</small>
+                    <p id="routeETA">-- mins</p>
+                </div>
+
+                <div class="route-item">
+                    <small>Charge Time</small>
+                    <p id="routeChargeTime">-- mins</p>
+                </div>
+
+                <div class="route-item">
+                    <small>Available</small>
+                    <p id="routeAvailability">0 / 0</p>
+                </div>
+
+            </div>
+
+            <div class="vehicle-summary">
+
+                <small>Your EV</small>
+
+                <div class="vehicle-row">
+
+                    <span id="routeCarModel">Not Selected</span>
+
+                    <span id="routeBattery">50%</span>
+
+                </div>
+
+            </div>
+
+            <div id="routeConnectorDetails" class="connector-section" style="display:none;">
+                <div class="connector-label">🔌 Available Connector Types</div>
+                <div id="routeConnectorsList"></div>
+            </div>
+
+            <div class="route-advice">
+
+                <small>🤖 Gemini AI Charging Recommendation</small>
+
+                <p id="routeAdvice">
+                    Select an EV model and battery level to estimate charging cost and charging time.
+                </p>
+
+            </div>
+
+            <div class="navigation-actions">
+
+                <button id="startNavBtn" class="start-nav-btn">
+                    ▶ Start Navigation
+                </button>
+
+                <button id="stopNavBtn"
+                        class="stop-nav-btn"
+                        style="display:none;">
+                    ■ Stop Navigation
+                </button>
+
+                <button id="centerNavBtn"
+                        class="center-nav-btn">
+                    📍 Center Map
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <aside id="sidebar">
+
+        <div class="sidebar-header">
+
+            <h2 id="recommendationTitle">
+                ⭐ Stations Near You
+            </h2>
+
+            <p id="recommendationSubtitle">
+                Ranked by EVGrid Score • Availability • Distance • Real OCM Connector Data
+            </p>
+
+        </div>
+
+        <div id="stationList"></div>
+
+    </aside>
+
+</main>
+
+<button id="adminBtn" class="admin-floating">
+    📊 Admin Dashboard
+</button>
+
+<section id="adminPanel" class="hidden">
+
+    <h2>📊 EVGrid Admin Dashboard</h2>
+
+</section>
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script
+    type="module"
+    src="js/app.js">
+</script>
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: evgrid-postgres
+    restart: always
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-evgrid}
+      POSTGRES_USER: ${POSTGRES_USER:-evgrid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evgrid -d evgrid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airflow-webserver:
+    build: ./airflow
+    container_name: airflow-webserver
+    restart: always
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW_CONN_EVGRID_POSTGRES: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      AIRFLOW__WEBSERVER__SESSION_BACKEND: securecookie
+      PYTHONPATH: /opt/airflow:/opt/airflow/dags:/opt/airflow/config
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./config:/opt/airflow/config
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/quality:/opt/airflow/quality
+      - ./dbt:/opt/airflow/dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    command: webserver
+
+  airflow-scheduler:
+    build: ./airflow
+    container_name: airflow-scheduler
+    restart: always
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW_CONN_EVGRID_POSTGRES: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      PYTHONPATH: /opt/airflow:/opt/airflow/dags:/opt/airflow/config
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./config:/opt/airflow/config
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/quality:/opt/airflow/quality
+      - ./dbt:/opt/airflow/dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    command: scheduler
+
+  airflow-triggerer:
+    build: ./airflow
+    container_name: airflow-triggerer
+    restart: always
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW_CONN_EVGRID_POSTGRES: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      PYTHONPATH: /opt/airflow:/opt/airflow/dags:/opt/airflow/config
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./config:/opt/airflow/config
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/quality:/opt/airflow/quality
+      - ./dbt:/opt/airflow/dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    command: triggerer
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+
+    container_name: evgrid-fastapi
+    restart: always
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-evgrid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-evgrid}
+      PYTHONPATH: /app
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./api:/app/api
+      - ./config:/app/config
+      - ./ingestion:/app/ingestion
+      - ./dbt:/app/dbt
+      - ./fastapi:/app/fastapi_project
+      - ./core:/app/core
+      - ./scripts:/app/scripts
+
+    working_dir: /app
+
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:1.8.2
+    container_name: evgrid-dbt
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    working_dir: /usr/app
+
+    volumes:
+      - ./dbt:/usr/app
+
+    environment:
+      DBT_PROFILES_DIR: /usr/app
+
+    entrypoint: ["/bin/sh"]
+    command:
+      - "-c"
+      - "tail -f /dev/null"
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: evgrid-metabase
+    restart: always
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: ${POSTGRES_DB:-evgrid}
+      MB_DB_PORT: 5432
+      MB_DB_USER: ${POSTGRES_USER:-evgrid}
+      MB_DB_PASS: ${POSTGRES_PASSWORD}
+      MB_DB_HOST: postgres
+
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
+      MB_SESSION_SECRET_KEY: ${MB_SESSION_SECRET_KEY:?set in .env}
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - metabase_data:/metabase-data
+
+volumes:
+  postgres_data:
+  metabase_data:

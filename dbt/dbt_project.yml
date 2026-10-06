@@ -1,0 +1,35 @@
+name: evgrid_dbt
+version: "1.0"
+config-version: 2
+
+profile: evgrid_postgres
+
+vars:
+  "dbt_date:time_zone": "UTC"
+
+model-paths: [models]
+seed-paths: [seeds]
+test-paths: [tests]
+macro-paths: [macros]
+
+target-path: target
+
+clean-targets:
+  - target
+  - dbt_packages
+
+seeds:
+  evgrid_dbt:
+    +schema: gold
+
+models:
+  evgrid_dbt:
+    +materialized: view
+
+    staging:
+      +schema: silver
+      +materialized: view
+
+    marts:
+      +schema: gold
+      +materialized: table

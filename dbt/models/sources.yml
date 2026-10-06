@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+
+    tables:
+      - name: charging_stations
+        description: EV charging stations extracted from Open Charge Map.
+
+      - name: availability
+        description: Connector availability from FastAPI (occupancy is simulated).
+        loaded_at_field: ingestion_timestamp
+        freshness:
+          warn_after: {count: 3, period: hour}
+          error_after: {count: 12, period: hour}
+        columns:
+          - name: station_id
+            tests: [not_null, unique]
+
+      - name: weather
+        description: Current city weather from Open-Meteo.
+        loaded_at_field: ingestion_timestamp
+        freshness:
+          warn_after: {count: 3, period: hour}
+          error_after: {count: 12, period: hour}
+
+      - name: weather_raw
+        description: >
+          Raw Open-Meteo responses, one row per city and weather point, appended
+          hourly by the weather DAG. Freshness uses the OBSERVATION time inside
+          the payload, so a stalled weather DAG is caught even though the ingest
+          DAG keeps loading the old value.
+        loaded_at_field: "(weather_data->'current'->>'time')::timestamp"
+        freshness:
+          warn_after: {count: 3, period: hour}
+          error_after: {count: 12, period: hour}
+
+      - name: energy_prices
+        description: Electricity tariff by city.
+
+      - name: recommendations
+        description: Station recommendation scores.
+
+      - name: map
+        description: Station map coordinates.
+
+      - name: stations
+        description: >
+          Retired as of step 4 -- stg_station_metrics reads bronze.charging_stations
+          directly now (see docs/architecture.md). This table is no longer written by
+          anything, so it has no freshness check; dropping the table entirely is safe
+          once you've confirmed nothing else still reads it.
+
+      - name: day_ahead_prices_de
+        description: >
+          Real hourly DE-LU day-ahead electricity price from SMARD.de
+          (ingestion/extract_smard.py).
+        loaded_at_field: ingestion_timestamp
+        freshness:
+          warn_after: {count: 30, period: hour}
+          error_after: {count: 48, period: hour}
+        columns:
+          - name: hour_utc
+            tests: [not_null, unique]
+
+      - name: station_power_de
+        description: >
+          Bundesnetzagentur Ladesaeulenregister stations matched to
+          bronze.charging_stations (ingestion/match_bnetza_stations.py).
+        columns:
+          - name: station_id
+            tests: [not_null, unique]

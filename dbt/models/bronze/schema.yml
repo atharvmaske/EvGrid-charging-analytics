@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: weather_current
+    columns:
+      - name: city
+        tests: [not_null, unique]
+
+  - name: recommendations_current
+    columns:
+      - name: station_id
+        tests: [not_null]
+
+  - name: map_current
+    columns:
+      - name: station_id
+        tests: [not_null]

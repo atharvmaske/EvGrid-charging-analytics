@@ -1,0 +1,21 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY requirements-fastapi.txt .
+RUN pip install --no-cache-dir -r requirements-fastapi.txt
+
+COPY . .
+
+RUN if [ -d "/app/fastapi" ]; then mv /app/fastapi /app/fastapi_project; fi
+
+RUN ln -s /app/fastapi_project/services /app/services && \
+    ln -s /app/fastapi_project/models /app/models && \
+    ln -s /app/fastapi_project/utils /app/utils && \
+    ln -s /app/fastapi_project/routers /app/routers
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

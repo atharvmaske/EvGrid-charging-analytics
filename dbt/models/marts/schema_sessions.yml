@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: mart_energy_hourly
+    description: >
+      Estimated energy (kWh) delivered per city per hour, derived from
+      occupied-connector counts in availability_history x an assumed average
+      charging power. Not a real energy meter reading -- see model doc.
+    columns:
+      - name: city
+        tests: [not_null]
+      - name: snapshot_hour
+        tests: [not_null]
+      - name: energy_kwh
+        tests: [not_null]
+      - name: avg_power_kw_source
+        description: Whether avg_power_kw came from the BNetZA register (bnetza_de) or the flat assumption (assumed_constant).
+        tests:
+          - accepted_values:
+              values: [bnetza_de, assumed_constant]
+
+  - name: mart_sessions_hourly
+    description: >
+      Estimated charging-session starts per city per hour, inferred from
+      occupied-connector count increases between hourly snapshots.
+    columns:
+      - name: city
+        tests: [not_null]
+      - name: snapshot_hour
+        tests: [not_null]
+      - name: sessions_started
+        tests: [not_null]
+
+  - name: mart_revenue_hourly
+    description: >
+      Estimated revenue per city per hour (energy x that city's tariff, kept
+      in the city's own currency -- do not sum/average revenue_local across
+      cities without converting currency first).
+    columns:
+      - name: city
+        tests: [not_null]
+      - name: snapshot_hour
+        tests: [not_null]
+      - name: revenue_local
+        tests: [not_null]
+      - name: price_source
+        description: Whether tariff_per_kwh came from SMARD day-ahead (smard_day_ahead) or the static tariff table (static_tariff).
+        tests:
+          - accepted_values:
+              values: [smard_day_ahead, static_tariff]

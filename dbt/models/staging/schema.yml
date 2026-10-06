@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: stg_station_metrics
+
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+          - unique
+
+      - name: city
+        tests:
+          - not_null
+
+      - name: station_name
+        tests:
+          - not_null
+
+      - name: total_connectors
+        tests:
+          - not_null
+
+      - name: occupancy_status
+        tests:
+          - accepted_values:
+              values:
+                - Busy
+                - Moderate
+                - Available

@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: availability_history
+    description: >
+      Hourly snapshots of simulated connector availability per station. One row
+      per station and hour. Appended by every pipeline run; past hours can be
+      backfilled with backfill_availability_history.py. full_refresh is disabled
+      so this table cannot be wiped by accident.
+
+    tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          min_value: 1
+      - dbt_expectations.expect_row_values_to_have_recent_data:
+          datepart: hour
+          interval: 6
+          column_name: snapshot_hour
+          config:
+            severity: warn
+
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+
+      - name: snapshot_hour
+        description: UTC hour the snapshot belongs to.
+        tests:
+          - not_null
+
+      - name: occupancy_rate
+        description: Occupied share of connectors, 0 to 1.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1
+
+      - name: record_origin
+        tests:
+          - accepted_values:
+              values: [captured, backfilled]
