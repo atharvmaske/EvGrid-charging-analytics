@@ -1,8 +1,9 @@
+
 services:
   postgres:
     image: postgres:17
     container_name: evgrid-postgres
-    restart: always
+    restart: "no"
 
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-evgrid}
@@ -24,7 +25,7 @@ services:
   airflow-webserver:
     build: ./airflow
     container_name: airflow-webserver
-    restart: always
+    restart: "no"
 
     env_file:
       - .env
@@ -61,7 +62,7 @@ services:
   airflow-scheduler:
     build: ./airflow
     container_name: airflow-scheduler
-    restart: always
+    restart: "no"
 
     env_file:
       - .env
@@ -94,7 +95,7 @@ services:
   airflow-triggerer:
     build: ./airflow
     container_name: airflow-triggerer
-    restart: always
+    restart: "no"
 
     env_file:
       - .env
@@ -130,7 +131,7 @@ services:
       dockerfile: Dockerfile.fastapi
 
     container_name: evgrid-fastapi
-    restart: always
+    restart: "no"
 
     depends_on:
       postgres:
@@ -162,7 +163,7 @@ services:
   dbt:
     image: ghcr.io/dbt-labs/dbt-postgres:1.8.2
     container_name: evgrid-dbt
-    restart: unless-stopped
+    restart: "no"
 
     env_file:
       - .env
@@ -187,7 +188,7 @@ services:
   metabase:
     image: metabase/metabase:latest
     container_name: evgrid-metabase
-    restart: always
+    restart: "no"
 
     depends_on:
       postgres:
@@ -201,7 +202,7 @@ services:
       MB_DB_PASS: ${POSTGRES_PASSWORD}
       MB_DB_HOST: postgres
 
-      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx2g"x
       MB_SESSION_SECRET_KEY: ${MB_SESSION_SECRET_KEY:?set in .env}
 
     ports:

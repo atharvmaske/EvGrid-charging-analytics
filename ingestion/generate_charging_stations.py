@@ -152,7 +152,8 @@ def sync(engine, city=None):
                 UPDATE bronze.charging_stations
                 SET station_name = :name, latitude = :lat, longitude = :lon,
                     connectors = :count, connectors_data = :conn_data,
-                    ingestion_timestamp = :ts
+                    ingestion_timestamp = :ts,
+                    last_seen_at = NOW()
                 WHERE station_id = :sid
                   AND (station_name, latitude, longitude, connectors)
                       IS DISTINCT FROM (:name, :lat, :lon, :count)
@@ -177,8 +178,8 @@ def sync(engine, city=None):
                 text("""
                 INSERT INTO bronze.charging_stations
                   (station_id, city, country_code, station_name, latitude,
-                   longitude, connectors, connectors_data, ingestion_timestamp)
-                SELECT :sid, :c, :cc, :name, :lat, :lon, :count, :conn_data, :ts
+                   longitude, connectors, connectors_data, ingestion_timestamp, last_seen_at)
+                SELECT :sid, :c, :cc, :name, :lat, :lon, :count, :conn_data, :ts, NOW()
                 WHERE NOT EXISTS (
                     SELECT 1 FROM bronze.charging_stations WHERE station_id = :sid
                 )

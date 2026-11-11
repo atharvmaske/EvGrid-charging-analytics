@@ -170,7 +170,7 @@ def merge_city(conn, city, city_config):
                     (station_id, city, country_code, station_name, latitude,
                      longitude, connectors, connectors_data, ingestion_timestamp)
                 VALUES %s
-                ON CONFLICT (station_id) DO NOTHING
+                ON CONFLICT (station_id) DO UPDATE SET last_seen_at = NOW()
             """, new_rows)
     conn.commit()
 

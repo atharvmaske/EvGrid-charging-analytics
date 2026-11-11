@@ -25,6 +25,7 @@ CATALOG_WITH_AVAILABILITY_QUERY = text("""
     LEFT JOIN bronze.availability a
         ON cs.station_id = a.station_id
     WHERE LOWER(cs.city) = LOWER(:city)
+      AND (cs.last_seen_at IS NULL OR cs.last_seen_at > NOW() - INTERVAL '30 days')
     ORDER BY cs.station_name
 """)
 
@@ -34,6 +35,7 @@ CATALOG_QUERY = text("""
         connectors, connectors_data, ingestion_timestamp
     FROM bronze.charging_stations
     WHERE LOWER(city) = LOWER(:city)
+      AND (last_seen_at IS NULL OR last_seen_at > NOW() - INTERVAL '30 days')
     ORDER BY connectors DESC, station_name
 """)
 

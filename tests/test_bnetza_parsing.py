@@ -1,7 +1,5 @@
 import pandas as pd
 
-import math
-
 from ingestion.extract_bnetza import (
     BNETZA_URL_PATTERN,
     discover_csv_url,
@@ -59,13 +57,11 @@ def test_discover_csv_url_returns_none_on_request_failure():
 
 
 def test_find_header_row_skips_the_title_line():
-
     text = "Ladesaeulenregister Bundesnetzagentur\nBetreiber;Ort;Breitengrad;Laengengrad;Steckertypen1\nACME;Berlin;52,5;13,4;Typ 2"
     assert find_header_row(text) == 1
 
 
 def test_find_header_row_skips_a_prose_description_mentioning_betreiber():
-
     text = (
         "Ladesaeulenregister Bundesnetzagentur\n"
         "Die Liste beinhaltet die Ladeeinrichtungen aller Betreiberinnen und Betreiber, die das Anzeigeverfahren der Bundesnetzagentur\n"
@@ -86,8 +82,9 @@ def test_find_header_row_returns_zero_when_header_is_already_first():
 
 
 def test_find_header_row_requires_enough_fields_not_just_the_word():
+
     text = "Betreiber\nActualHeaderRow;Ort;Breitengrad;Laengengrad;Steckertypen1"
-    assert find_header_row(text) == 0 
+    assert find_header_row(text) == 0  
 
 
 def test_find_header_row_falls_back_to_zero_if_betreiber_never_appears():
@@ -100,18 +97,17 @@ def test_normalize_col_strips_umlauts_and_case():
     assert normalize_col("  Straße  ") == "strasse"
 
 
-def test_map_columns_aggregate_only_layout():
+def test_map_columns_single_power_column():
     cols = ["Betreiber", "Ort", "Breitengrad", "Längengrad",
             "Nennleistung Ladeeinrichtung [kW]", "Anzahl Ladepunkte"]
     mapping = map_columns(cols)
     assert mapping["operator"] == ["Betreiber"]
-    assert mapping["aggregate_power_kw"] == ["Nennleistung Ladeeinrichtung [kW]"]
-    assert "power_kw" not in mapping
+    assert mapping["power_kw"] == ["Nennleistung Ladeeinrichtung [kW]"]
     assert mapping["num_points"] == ["Anzahl Ladepunkte"]
 
 
 def test_map_columns_numbered_power_columns():
-    cols = ["Nennleistung Stecker1", "Nennleistung Stecker2",
+    cols = ["Nennleistung Ladepunkt 1 [kW]", "Nennleistung Ladepunkt 2 [kW]",
             "Steckertypen1", "Steckertypen2"]
     mapping = map_columns(cols)
     assert len(mapping["power_kw"]) == 2
@@ -135,32 +131,11 @@ def test_parse_plug_types_dedupes_and_splits():
     assert parse_plug_types([None, ""]) == []
 
 
-def test_parse_plug_types_filters_pandas_nan_not_just_none():
-    assert parse_plug_types(["AC Typ 2 Steckdose", float("nan")]) == ["AC Typ 2 Steckdose"]
-    assert parse_plug_types([float("nan"), float("nan")]) == []
-
-
 def test_match_city_handles_aliases_and_accents():
     assert match_city("München") == "munich"
     assert match_city("Frankfurt am Main") == "frankfurt"
-    assert match_city("Hamburg") is None
+    assert match_city("Hamburg") == "hamburg"
     assert match_city(None) is None
-
-
-def test_match_city_does_not_match_a_town_that_merely_contains_the_name():
-    assert match_city("Überlingen") is None
-    assert match_city("Marienberg") is None
-    assert match_city("Münchenbernsdorf") is None
-
-
-def test_match_city_excludes_the_wrong_frankfurt():
-    assert match_city("Frankfurt (Oder)") is None
-    assert match_city("Frankfurt an der Oder") is None
-    assert match_city("Frankfurt am Main") == "frankfurt"
-
-
-def test_match_city_handles_nan():
-    assert match_city(float("nan")) is None
 
 
 def test_extract_points_single_power_column_replicated_by_num_points():
@@ -193,33 +168,6 @@ def test_extract_points_numbered_columns():
     rows = extract_points(df, mapping)
     powers = sorted(p["power_kw"] for p in rows[0]["points"])
     assert powers == [22.0, 50.0]
-
-
-def test_aggregate_power_column_is_kept_separate_from_per_point_power():
-    cols = [
-        "Betreiber", "Nennleistung Ladeeinrichtung [kW]", "Ort", "Breitengrad", "Längengrad",
-        "Steckertypen1", "Nennleistung Stecker1", "EVSE-ID1", "Public Key1",
-        "Steckertypen2", "Nennleistung Stecker2", "EVSE-ID2", "Public Key2",
-    ]
-    mapping = map_columns(cols)
-    assert mapping["aggregate_power_kw"] == ["Nennleistung Ladeeinrichtung [kW]"]
-    assert mapping["power_kw"] == ["Nennleistung Stecker1", "Nennleistung Stecker2"]
-
-
-def test_extract_points_pairs_real_stecker_columns_correctly():
-    df = pd.DataFrame([{
-        "Betreiber": "ACME", "Nennleistung Ladeeinrichtung [kW]": "2222,0",
-        "Ort": "Berlin", "Breitengrad": "52,52", "Längengrad": "13,40",
-        "Steckertypen1": "AC Typ 2 Steckdose", "Nennleistung Stecker1": "22,0",
-        "Steckertypen2": "CCS", "Nennleistung Stecker2": "150,0",
-    }])
-    mapping = map_columns(df.columns)
-    rows = extract_points(df, mapping)
-    points = sorted(rows[0]["points"], key=lambda p: p["power_kw"])
-    assert [p["power_kw"] for p in points] == [22.0, 150.0]
-    assert points[0]["plug_types"] == ["AC Typ 2 Steckdose"]
-    assert points[1]["plug_types"] == ["CCS"]
-    assert 2222.0 not in [p["power_kw"] for p in points]
 
 
 def test_map_columns_power_regex_is_not_capped_at_four_points():

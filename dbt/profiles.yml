@@ -22,7 +22,6 @@ evgrid_postgres:
       schema: public
       threads: 4
 
-    # CI uses a throwaway service container; defaults are fine here only.
     ci:
       type: postgres
       host: "{{ env_var('DBT_TARGET_HOST', 'localhost') }}"

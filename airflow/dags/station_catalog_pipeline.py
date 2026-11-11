@@ -1,21 +1,16 @@
 from datetime import datetime, timedelta
-
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from alert_defaults import default_args as make_default_args
 
-default_args = {
-    "owner": "evgrid",
-    "retries": 1,
-    "retry_delay": timedelta(minutes=15),
-    "execution_timeout": timedelta(hours=2),
-}
+dag_default_args = make_default_args(retries=1, retry_delay_minutes=15, execution_timeout_minutes=120)
 
 DEXEC = "docker exec evgrid-fastapi"
 
 with DAG(
     dag_id="evgrid_station_catalog_pipeline",
-    default_args=default_args,
+    default_args=dag_default_args,
     start_date=datetime(2026, 9, 1),
     schedule="@weekly",
     catchup=False,
@@ -64,8 +59,25 @@ with DAG(
         extract_ocm_all
         >> generate_stations_all
         >> extract_tomtom_all
-        >> merge_tomtom_all 
+        >> merge_tomtom_all
         >> refresh_availability
         >> refresh_sessions
         >> trigger_ingest
+    )
+
+
+with DAG(
+    dag_id="evgrid_merge_tomtom_twice_weekly",
+    default_args=dag_default_args,
+    start_date=datetime(2026, 9, 1),
+    schedule="0 3 * * 1,4",
+    catchup=False,
+    max_active_runs=1,
+    dagrun_timeout=timedelta(hours=1),
+    tags=["evgrid", "bronze", "catalog", "twice-weekly"],
+) as daily_dag:
+
+    merge_tomtom_tw = BashOperator(
+        task_id="merge_tomtom_stations_all",
+        bash_command=f"{DEXEC} python -m ingestion.merge_tomtom_stations --all",
     )

@@ -7,9 +7,9 @@ from difflib import SequenceMatcher
 from typing import NamedTuple
 
 EARTH_RADIUS_M = 6_371_000
-MAX_MATCH_M = 150    
+MAX_MATCH_M = 250    
 CLOSE_MATCH_M = 40   
-MIN_NAME_SIM = 0.5  
+MIN_NAME_SIM = 0.4 
 _PREFILTER_M = MAX_MATCH_M * 1.2
 
 _STOP_TOKENS = {

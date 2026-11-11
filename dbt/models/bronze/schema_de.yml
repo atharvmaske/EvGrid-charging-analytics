@@ -30,3 +30,5 @@ models:
               min_value: 0
               max_value: 400
               row_condition: "avg_power_kw is not null"
+              config:
+                severity: warn

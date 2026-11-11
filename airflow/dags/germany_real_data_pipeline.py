@@ -56,7 +56,7 @@ with DAG(
     dag_id="evgrid_germany_bnetza_weekly",
     default_args=default_args,
     start_date=datetime(2026, 10, 1),
-    schedule="0 3 * * 1",
+    schedule="0 3 * * 1",  
     catchup=False,
     max_active_runs=1,
     dagrun_timeout=timedelta(hours=1),

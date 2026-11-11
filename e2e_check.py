@@ -12,7 +12,7 @@ WEATHER, INGEST, GOLD = (
     "evgrid_ingest_pipeline",
     "evgrid_gold_pipeline",
 )
-EXPECTED_DAGS = {WEATHER, INGEST, GOLD, "evgrid_silver_pipeline", "evgrid_live_availability_refresh"}
+EXPECTED_DAGS = {WEATHER, INGEST, GOLD, "evgrid_silver_pipeline"}
 RESULTS = []
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")

@@ -356,7 +356,7 @@ LIVE_CITIES = {
     "los_angeles", "paris", "bern", "pune", "stockholm", "copenhagen",
     "stuttgart", "hamburg", "cologne", "dusseldorf", "essen",
     "leipzig", "dresden", "nuremberg",
-    "hyderabad", "chennai", "solapur",
+    "hyderabad", "chennai", "solapur","bengaluru",
 }
 SIMULATOR_CITIES = set(CITIES) - LIVE_CITIES
 OCM_EXCLUDED_CITIES = {"hyderabad", "chennai", "solapur", "pune"}

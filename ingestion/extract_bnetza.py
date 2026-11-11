@@ -41,9 +41,17 @@ BNETZA_URL = os.getenv("BNETZA_URL")
 DOCKER_HOSTNAMES = {"postgres", "evgrid-postgres", "db"}
 
 DE_CITY_ALIASES = {
-    "berlin": {"include": ["berlin"], "exclude": []},
-    "munich": {"include": ["muenchen", "munchen", "munich"], "exclude": []},
-    "frankfurt": {"include": ["frankfurt"], "exclude": ["oder"]},
+    "berlin":     {"include": ["berlin"],                              "exclude": []},
+    "munich":     {"include": ["muenchen", "munchen", "munich"],       "exclude": []},
+    "frankfurt":  {"include": ["frankfurt"],                           "exclude": ["oder"]},
+    "stuttgart":  {"include": ["stuttgart"],                           "exclude": []},
+    "hamburg":    {"include": ["hamburg"],                             "exclude": []},
+    "cologne":    {"include": ["koeln", "koln", "cologne"],            "exclude": []},
+    "dusseldorf": {"include": ["duesseldorf", "dusseldorf"],           "exclude": []},
+    "essen":      {"include": ["essen"],                               "exclude": []},
+    "leipzig":    {"include": ["leipzig"],                             "exclude": []},
+    "dresden":    {"include": ["dresden"],                             "exclude": []},
+    "nuremberg":  {"include": ["nuernberg", "nurnberg", "nuremberg"],  "exclude": []},
 }
 
 COLUMN_PATTERNS = {
@@ -56,7 +64,7 @@ COLUMN_PATTERNS = {
     "latitude": ["breitengrad", "latitude"],
     "longitude": ["laengengrad", "longitude"],
 
-    "aggregate_power_kw": ["nennleistung ladeeinrichtung"],
+    "aggregate_power_kw": [],
     "num_points": ["anzahl ladepunkte", "anzahl der ladepunkte"],
     "plug_types": ["steckertyp"],   
     "commissioning_date": ["inbetriebnahme"],
@@ -89,7 +97,7 @@ def normalize_col(name):
     return re.sub(r"\s+", " ", s)
 
 
-COLUMN_POWER_REGEX = re.compile(r"^(p\d+\s*\[kw\]|nennleistung\s*stecker\s*\d+)$")
+COLUMN_POWER_REGEX = re.compile(r"^(p\d+\s*\[kw\]|nennleistung\s*stecker\s*\d+|nennleistung\s*ladepunkt\s*\d+\s*\[kw\]|nennleistung\s*ladeeinrichtung\s*\[kw\]|nennleistung\s*\[kw\])$")
 
 
 def map_columns(columns):
@@ -188,6 +196,14 @@ def extract_points(df, mapping):
                 plug_col = plug_cols[i] if i < len(plug_cols) else (plug_cols[0] if plug_cols else None)
                 plugs = parse_plug_types([row.get(plug_col)]) if plug_col else []
                 points.append({"power_kw": power, "plug_types": plugs})
+            if len(power_cols) == 1 and points:
+                n_raw = first(mapping, "num_points", row)
+                try:
+                    n = max(int(float(str(n_raw).replace(",", "."))), 1) if n_raw not in (None, "") else 1
+                except (TypeError, ValueError):
+                    n = 1
+                if n > 1:
+                    points = points * n
         else:
             power = parse_power_kw(first(mapping, "aggregate_power_kw", row))
             n_raw = first(mapping, "num_points", row)
@@ -222,7 +238,6 @@ def extract_points(df, mapping):
 
     return rows
 
-
 def rows_to_stations(parsed_rows):
 
     sites = {}
@@ -250,7 +265,7 @@ def rows_to_stations(parsed_rows):
         })
 
         for point in row["points"]:
-            if point["power_kw"] is not None:
+            if point["power_kw"] is not None and point["power_kw"] <= 400:
                 site["powers"].append(point["power_kw"])
             site["plug_types"].extend(point["plug_types"])
         site["_point_count"] = site.get("_point_count", 0) + len(row["points"])
@@ -263,7 +278,7 @@ def rows_to_stations(parsed_rows):
             **site,
             "connectors": site.pop("_point_count"),
             "avg_power_kw": round(sum(powers) / len(powers), 1) if powers else None,
-            "max_power_kw": max(powers) if powers else None,
+            "max_power_kw": min(max(powers), 400.0) if powers else None,
             "plug_types": plug_types,
         })
 
