@@ -265,7 +265,7 @@ async function loadDashboard() {
 
     try {
 
-        const weather = await getWeather(city);
+        const weather = await getWeather(city).catch(() => ({}));
         const mapData = await getMapStations(city);
 
         const stations = Array.isArray(mapData)
